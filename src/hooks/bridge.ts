@@ -15,6 +15,13 @@
 
 import { detectKeywordsWithType, extractPromptText, removeCodeBlocks, type DetectedKeyword } from './keyword-detector/index.js';
 import { readRalphState, incrementRalphIteration, clearRalphState, detectCompletionPromise, type RalphLoopState } from './ralph-loop/index.js';
+import {
+  readVerificationState,
+  startVerification,
+  getOracleVerificationPrompt,
+  detectOracleApproval,
+  clearVerificationState
+} from './ralph-verifier/index.js';
 import { checkIncompleteTodos } from './todo-continuation/index.js';
 import { checkPersistentModes, createHookOutput } from './persistent-mode/index.js';
 import { activateUltrawork, readUltraworkState } from './ultrawork-state/index.js';
@@ -184,7 +191,7 @@ async function processStopContinuation(input: HookInput): Promise<HookOutput> {
 
 /**
  * Process Ralph Loop hook (session.idle event)
- * Continues work loops until completion promise is detected
+ * Continues work loops until completion promise is detected and oracle verifies
  */
 async function processRalphLoop(input: HookInput): Promise<HookOutput> {
   const sessionId = input.sessionId;
@@ -206,10 +213,37 @@ async function processRalphLoop(input: HookInput): Promise<HookOutput> {
     return { continue: true };
   }
 
+  // Check for existing verification state (oracle verification in progress)
+  const verificationState = readVerificationState(directory);
+
+  if (verificationState?.pending) {
+    // Check if oracle has approved (by looking for the tag in transcript)
+    // This is handled more thoroughly in persistent-mode hook
+    // Here we just remind to spawn oracle if verification is pending
+    const verificationPrompt = getOracleVerificationPrompt(verificationState);
+    return {
+      continue: true,
+      message: verificationPrompt
+    };
+  }
+
   // Check for completion promise in transcript
   const completed = detectCompletionPromise(sessionId, state.completion_promise);
 
   if (completed) {
+    // Start oracle verification instead of completing immediately
+    startVerification(directory, state.completion_promise, state.prompt);
+    const newVerificationState = readVerificationState(directory);
+
+    if (newVerificationState) {
+      const verificationPrompt = getOracleVerificationPrompt(newVerificationState);
+      return {
+        continue: true,
+        message: verificationPrompt
+      };
+    }
+
+    // Fallback if verification couldn't be started
     clearRalphState(directory);
     return {
       continue: true,
@@ -220,6 +254,7 @@ async function processRalphLoop(input: HookInput): Promise<HookOutput> {
   // Check max iterations
   if (state.iteration >= state.max_iterations) {
     clearRalphState(directory);
+    clearVerificationState(directory);
     return {
       continue: true,
       message: `[RALPH LOOP STOPPED] Max iterations (${state.max_iterations}) reached without completion.`

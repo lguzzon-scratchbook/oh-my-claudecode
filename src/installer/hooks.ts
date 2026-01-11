@@ -981,13 +981,67 @@ async function main() {
     // Check for ralph loop state
     const ralphState = readJsonFile(join(directory, '.sisyphus', 'ralph-state.json'));
 
+    // Check for verification state (oracle verification)
+    const verificationState = readJsonFile(join(directory, '.sisyphus', 'ralph-verification.json'));
+
     // Count incomplete todos
     const incompleteCount = countIncompleteTodos(todosDir, directory);
 
-    // Priority 1: Ralph Loop
+    // Priority 1: Ralph Loop with Oracle Verification
     if (ralphState?.active) {
       const iteration = ralphState.iteration || 1;
       const maxIter = ralphState.max_iterations || 10;
+
+      // Check if oracle verification is pending
+      if (verificationState?.pending) {
+        const attempt = (verificationState.verification_attempts || 0) + 1;
+        const maxAttempts = verificationState.max_verification_attempts || 3;
+
+        console.log(JSON.stringify({
+          continue: false,
+          reason: \`<ralph-verification>
+
+[ORACLE VERIFICATION REQUIRED - Attempt \${attempt}/\${maxAttempts}]
+
+The agent claims the task is complete. Before accepting, YOU MUST verify with Oracle.
+
+**Original Task:**
+\${verificationState.original_task || ralphState.prompt || 'No task specified'}
+
+**Completion Claim:**
+\${verificationState.completion_claim || 'Task marked complete'}
+
+\${verificationState.oracle_feedback ? \`**Previous Oracle Feedback (rejected):**
+\${verificationState.oracle_feedback}
+\` : ''}
+
+## MANDATORY VERIFICATION STEPS
+
+1. **Spawn Oracle Agent** for verification:
+   \\\`\\\`\\\`
+   Task(subagent_type="oracle", prompt="Verify this task completion claim...")
+   \\\`\\\`\\\`
+
+2. **Oracle must check:**
+   - Are ALL requirements from the original task met?
+   - Is the implementation complete, not partial?
+   - Are there any obvious bugs or issues?
+   - Does the code compile/run without errors?
+   - Are tests passing (if applicable)?
+
+3. **Based on Oracle's response:**
+   - If APPROVED: Output \\\`<oracle-approved>VERIFIED_COMPLETE</oracle-approved>\\\`
+   - If REJECTED: Continue working on the identified issues
+
+DO NOT output the completion promise again until Oracle approves.
+
+</ralph-verification>
+
+---
+\`
+        }));
+        return;
+      }
 
       if (iteration < maxIter) {
         const newIter = iteration + 1;

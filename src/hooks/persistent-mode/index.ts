@@ -26,6 +26,17 @@ import {
   detectCompletionPromise,
   type RalphLoopState
 } from '../ralph-loop/index.js';
+import {
+  readVerificationState,
+  startVerification,
+  recordOracleFeedback,
+  getOracleVerificationPrompt,
+  getOracleRejectionContinuationPrompt,
+  detectOracleApproval,
+  detectOracleRejection,
+  clearVerificationState,
+  type VerificationState
+} from '../ralph-verifier/index.js';
 import { checkIncompleteTodos, getNextPendingTodo } from '../todo-continuation/index.js';
 import { TODO_CONTINUATION_PROMPT } from '../../installer/hooks.js';
 
@@ -46,13 +57,68 @@ export interface PersistentModeResult {
 }
 
 /**
+ * Check for oracle approval in session transcript
+ */
+function checkOracleApprovalInTranscript(sessionId: string): boolean {
+  const claudeDir = join(homedir(), '.claude');
+  const possiblePaths = [
+    join(claudeDir, 'sessions', sessionId, 'transcript.md'),
+    join(claudeDir, 'sessions', sessionId, 'messages.json'),
+    join(claudeDir, 'transcripts', `${sessionId}.md`)
+  ];
+
+  for (const transcriptPath of possiblePaths) {
+    if (existsSync(transcriptPath)) {
+      try {
+        const content = readFileSync(transcriptPath, 'utf-8');
+        if (detectOracleApproval(content)) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Check for oracle rejection in session transcript
+ */
+function checkOracleRejectionInTranscript(sessionId: string): { rejected: boolean; feedback: string } {
+  const claudeDir = join(homedir(), '.claude');
+  const possiblePaths = [
+    join(claudeDir, 'sessions', sessionId, 'transcript.md'),
+    join(claudeDir, 'sessions', sessionId, 'messages.json'),
+    join(claudeDir, 'transcripts', `${sessionId}.md`)
+  ];
+
+  for (const transcriptPath of possiblePaths) {
+    if (existsSync(transcriptPath)) {
+      try {
+        const content = readFileSync(transcriptPath, 'utf-8');
+        const result = detectOracleRejection(content);
+        if (result.rejected) {
+          return result;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  return { rejected: false, feedback: '' };
+}
+
+/**
  * Check Ralph Loop state and determine if it should continue
+ * Now includes Oracle verification for completion claims
  */
 async function checkRalphLoop(
   sessionId?: string,
   directory?: string
 ): Promise<PersistentModeResult | null> {
-  const state = readRalphState(directory || process.cwd());
+  const workingDir = directory || process.cwd();
+  const state = readRalphState(workingDir);
 
   if (!state || !state.active) {
     return null;
@@ -63,11 +129,82 @@ async function checkRalphLoop(
     return null;
   }
 
+  // Check for existing verification state (oracle verification in progress)
+  const verificationState = readVerificationState(workingDir);
+
+  if (verificationState?.pending) {
+    // Verification is in progress - check for oracle's response
+    if (sessionId) {
+      // Check for oracle approval
+      if (checkOracleApprovalInTranscript(sessionId)) {
+        // Oracle approved - truly complete
+        clearVerificationState(workingDir);
+        clearRalphState(workingDir);
+        return {
+          shouldBlock: false,
+          message: `[RALPH LOOP VERIFIED COMPLETE] Oracle verified task completion after ${state.iteration} iteration(s). Excellent work!`,
+          mode: 'none'
+        };
+      }
+
+      // Check for oracle rejection
+      const rejection = checkOracleRejectionInTranscript(sessionId);
+      if (rejection.rejected) {
+        // Oracle rejected - continue with feedback
+        recordOracleFeedback(workingDir, false, rejection.feedback);
+        const updatedVerification = readVerificationState(workingDir);
+
+        if (updatedVerification) {
+          const continuationPrompt = getOracleRejectionContinuationPrompt(updatedVerification);
+          return {
+            shouldBlock: true,
+            message: continuationPrompt,
+            mode: 'ralph-loop',
+            metadata: {
+              iteration: state.iteration,
+              maxIterations: state.max_iterations
+            }
+          };
+        }
+      }
+    }
+
+    // Verification still pending - remind to spawn oracle
+    const verificationPrompt = getOracleVerificationPrompt(verificationState);
+    return {
+      shouldBlock: true,
+      message: verificationPrompt,
+      mode: 'ralph-loop',
+      metadata: {
+        iteration: state.iteration,
+        maxIterations: state.max_iterations
+      }
+    };
+  }
+
   // Check for completion promise in transcript
   const completed = detectCompletionPromise(sessionId || '', state.completion_promise);
 
   if (completed) {
-    clearRalphState(directory || process.cwd());
+    // Completion promise detected - START oracle verification instead of completing
+    startVerification(workingDir, state.completion_promise, state.prompt);
+    const newVerificationState = readVerificationState(workingDir);
+
+    if (newVerificationState) {
+      const verificationPrompt = getOracleVerificationPrompt(newVerificationState);
+      return {
+        shouldBlock: true,
+        message: verificationPrompt,
+        mode: 'ralph-loop',
+        metadata: {
+          iteration: state.iteration,
+          maxIterations: state.max_iterations
+        }
+      };
+    }
+
+    // Fallback if verification state couldn't be created
+    clearRalphState(workingDir);
     return {
       shouldBlock: false,
       message: `[RALPH LOOP COMPLETE] Task completed after ${state.iteration} iteration(s). Great work!`,
@@ -77,7 +214,8 @@ async function checkRalphLoop(
 
   // Check max iterations
   if (state.iteration >= state.max_iterations) {
-    clearRalphState(directory || process.cwd());
+    clearRalphState(workingDir);
+    clearVerificationState(workingDir);
     return {
       shouldBlock: false,
       message: `[RALPH LOOP STOPPED] Max iterations (${state.max_iterations}) reached without completion promise. Consider reviewing the task requirements.`,
@@ -86,7 +224,7 @@ async function checkRalphLoop(
   }
 
   // Increment and continue
-  const newState = incrementRalphIteration(directory || process.cwd());
+  const newState = incrementRalphIteration(workingDir);
   if (!newState) {
     return null;
   }
