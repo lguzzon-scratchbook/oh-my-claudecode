@@ -5,30 +5,131 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.11.2] - 2026-01-13
+## [2.0.1-beta] - 2026-01-13
 
-### Fixed
-- **Windows Support** - Fixed hook scripts and cross-platform compatibility (closes #30)
-  - `hooks.json` now uses Node.js scripts (.mjs) instead of Bash for cross-platform support
-  - Created Node.js versions of all hook scripts: `keyword-detector.mjs`, `pre-tool-enforcer.mjs`, `post-tool-verifier.mjs`, `persistent-mode.mjs`
-  - Fixed `which` command usage to use `where` on Windows in `plugin-patterns/index.ts` and `lsp/servers.ts`
-  - Windows paths are now properly handled with quoted paths in hook commands
+### Added
+- **Vitest test framework** with comprehensive test suite (231 tests)
+  - Model routing tests (100 tests)
+  - Hook system tests (78 tests)
+  - Skill activation tests (15 tests)
+  - Installer validation tests (28 tests)
+- **Windows native support improvements**
+  - Cross-platform command detection (which → where on Windows)
+  - Platform-aware auto-update with graceful Windows handling
+  - Fixed Unix-only shell redirects
 
 ### Changed
-- **Hook Configuration** - All plugin hooks now use `node` command instead of `bash` for universal compatibility
-- Default hook scripts changed from `.sh` to `.mjs` in `hooks/hooks.json`
-
-### Technical Details
-- Added `isWindows()` and `whichCommand()` helpers for cross-platform binary detection
-- Node.js hook scripts maintain feature parity with Bash versions
-- Plugin installation now works correctly on Windows without WSL
-
-## [1.11.1] - 2026-01-13
+- Synced shell script installer with TypeScript installer
+- Removed deprecated orchestrator command from shell script
+- Removed separate skills directory (now via commands only)
 
 ### Fixed
-- **Agent Frontmatter** - Added missing `name` and `description` fields to all agent YAML frontmatter
-  - All 10 agents (oracle, librarian, explore, frontend-engineer, document-writer, multimodal-looker, momus, metis, sisyphus-junior, prometheus) now have required frontmatter per Claude Code sub-agent spec
-  - Fixes issue #33: Agents failed to load due to missing required fields
+- Cross-platform `which` command replaced with platform-aware detection
+- Auto-update now handles Windows gracefully with helpful error message
+- Shell script command count matches TypeScript installer (11 commands)
+- **Agent frontmatter** - Added missing `name` and `description` fields to all 11 agents
+  - Per Claude Code sub-agent specification requirements
+
+---
+
+## [2.0.0-beta.2] - 2026-01-13
+
+### 🧪 New: QA-Tester Agent for Interactive Testing
+
+**Added tmux-based interactive testing capabilities for CLI/service verification.**
+
+### Added
+- **QA-Tester Agent** (`src/agents/qa-tester.ts`)
+  - Interactive CLI testing using tmux sessions
+  - Prerequisite checking (tmux availability, server connections)
+  - Structured test execution workflow
+  - Oracle → QA-Tester diagnostic loop pattern
+
+- **Smart Gating for qa-tester** in ultrawork/skills
+  - Prefer standard test suites over qa-tester when available
+  - Use qa-tester only when interactive testing is truly needed
+  - Token-efficient verification decisions
+
+- **Adaptive Routing for qa-tester**
+  - Simple verification → Haiku
+  - Interactive testing → Sonnet
+  - Complex integration → Opus
+
+### Changed
+- Updated ultrawork skill with verification protocol and qa-tester gating
+- Updated ralph-loop and orchestrator with qa-tester integration
+- Updated sisyphus command with Agent Combinations section
+
+### Refactored
+- **Merged sisyphus+orchestrator+ultrawork into default mode** - 80% behavior overlap consolidated
+  - Default mode is now an intelligent orchestrator
+  - `/orchestrator` command deprecated (use default mode or `/ultrawork`)
+  - Skill composition replaces agent swapping
+- **Removed deprecated orchestrator command** - Deleted `commands/orchestrator.md` and `orchestratorSkill` (1352 lines)
+- **Updated attribution** - Changed from "Port of" to "Inspired by" oh-my-opencode (70% divergence)
+
+### Fixed
+- **Migrated to ESLint v9 flat config** - Created `eslint.config.js` for modern ESLint
+- **Resolved all 50 lint warnings** - Removed unused imports, fixed prefer-const, updated re-exports
+- Synced installer COMMAND_DEFINITIONS with updated skills
+- Handle malformed settings.json gracefully in install.sh
+
+---
+
+## [2.0.0-beta.1] - 2026-01-13
+
+### 🚀 Revolutionary: Intelligent Model Routing
+
+**This is a major release introducing adaptive model routing for all agents.**
+
+The orchestrator (Opus) now analyzes task complexity BEFORE delegation and routes to the appropriate model tier (Haiku/Sonnet/Opus). This dramatically improves efficiency - simple tasks use faster, cheaper models while complex tasks get the full power of Opus.
+
+### Added
+- **Intelligent Model Routing System** (`src/features/model-routing/`)
+  - `types.ts`: Core types for routing (ComplexityTier, RoutingDecision, etc.)
+  - `signals.ts`: Complexity signal extraction (lexical, structural, context)
+  - `scorer.ts`: Weighted scoring system for complexity calculation
+  - `rules.ts`: Priority-based routing rules engine
+  - `router.ts`: Main routing logic with `getModelForTask()` API
+  - `prompts/`: Tier-specific prompt adaptations (opus.ts, sonnet.ts, haiku.ts)
+
+- **Adaptive Routing for ALL Agents**
+  - Only orchestrators are fixed to Opus (they analyze and delegate)
+  - All other agents adapt based on task complexity:
+    - `oracle`: lookup → Haiku, tracing → Sonnet, debugging → Opus
+    - `prometheus`: breakdown → Haiku, planning → Sonnet, strategic → Opus
+    - `momus`: checklist → Haiku, gap analysis → Sonnet, adversarial → Opus
+    - `metis`: impact → Haiku, deps → Sonnet, risk analysis → Opus
+    - `explore`: simple search → Haiku, complex → Sonnet
+    - `document-writer`: simple docs → Haiku, complex → Sonnet
+    - `sisyphus-junior`: simple fix → Haiku, module work → Sonnet, risky → Opus
+
+- **Complexity Signal Detection**
+  - Lexical: word count, keywords (architecture, debugging, risk, simple)
+  - Structural: subtask count, cross-file deps, impact scope, reversibility
+  - Context: previous failures, conversation depth, plan complexity
+
+- **Tiered Prompt Adaptations**
+  - Haiku: Concise, direct prompts for speed
+  - Sonnet: Balanced prompts for efficiency
+  - Opus: Deep reasoning prompts with thinking mode
+
+### Changed
+- **Orchestrator Prompts** updated with intelligent routing guidance
+- **Configuration** (`src/config/loader.ts`) now includes routing options
+- **Types** (`src/shared/types.ts`) extended with routing configuration
+
+### Breaking Changes
+- Routing is now proactive (orchestrator decides upfront) instead of reactive
+- Deprecated `routeWithEscalation()` - use `getModelForTask()` instead
+
+### Migration Guide
+No action needed - the system automatically routes based on complexity. To override:
+```typescript
+Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
+```
+
+---
 
 ## [1.11.0] - 2026-01-13
 

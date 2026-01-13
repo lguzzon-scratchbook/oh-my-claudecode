@@ -1,6 +1,6 @@
 ---
 name: sisyphus-junior
-description: Focused task executor - no delegation
+description: Focused task executor for implementation work
 model: sonnet
 ---
 

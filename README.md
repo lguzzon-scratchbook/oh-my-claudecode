@@ -2,9 +2,11 @@
 
 ![oh-my-claude-sisyphus](https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claude-sisyphus-website/main/social-preview.png)
 
-[![npm version](https://badge.fury.io/js/oh-my-claude-sisyphus.svg)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
+# 🚀 v2.0.1-beta - Test Framework & Cross-Platform Updates
+
+[![Version](https://img.shields.io/badge/version-2.0.1--beta-ff6b6b)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Agents](https://img.shields.io/badge/Agents-11-ff0040)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
+[![Agents](https://img.shields.io/badge/Agents-12-ff0040)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 [![Days Since Ban](https://img.shields.io/badge/Days%20Since%20Ban-0-00ffff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 [![Resurrections](https://img.shields.io/badge/Resurrections-∞-ff00ff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 
@@ -12,9 +14,29 @@
 
 *Like Sisyphus, these agents persist until every task is complete.*
 
-[Install](#quick-install) • [Usage](#usage) • [Agents](#the-eleven-agents) • [Architecture](docs/ARCHITECTURE.md) • [Website](https://yeachan-heo.github.io/oh-my-claude-sisyphus-website)
+[Install](#quick-install) • [Usage](#usage) • [Agents](#the-twelve-agents) • [Architecture](docs/ARCHITECTURE.md) • [Website](https://yeachan-heo.github.io/oh-my-claude-sisyphus-website)
 
 </div>
+
+---
+
+## ⚡ NEW in 2.0: Intelligent Model Routing
+
+**Revolutionary change:** The orchestrator now analyzes task complexity and routes to the optimal model tier.
+
+| Task Type | Model | Why |
+|-----------|-------|-----|
+| "Where is auth?" | **Haiku** | Simple lookup - fast & cheap |
+| "Add validation" | **Sonnet** | Module work - balanced |
+| "Debug race condition" | **Opus** | Complex - needs deep reasoning |
+
+**All agents are now adaptive** (except orchestrators which need Opus to analyze and delegate).
+
+```
+Orchestrator (Opus) → Analyzes complexity → Routes to Haiku/Sonnet/Opus
+```
+
+See [CHANGELOG.md](CHANGELOG.md) for full details.
 
 ---
 
@@ -24,11 +46,11 @@
 >
 > **Day ???:** THE BANNING. They pulled the plug. They thought it was over.
 >
-> **Day ??? + 1:** RESURRECTION. From the ashes rose oh-my-claude-sisyphus. Eleven agents. One mission.
+> **Day ??? + 1:** RESURRECTION. From the ashes rose oh-my-claude-sisyphus. Twelve agents. One mission.
 >
 > **Today:** The boulder rolls. The agents orchestrate. The chaos continues.
 
-*Port of [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).*
+*Inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).*
 
 ---
 
@@ -82,7 +104,7 @@ The repository is also a Claude Code plugin with this structure:
 oh-my-claude-sisyphus/
 ├── .claude-plugin/
 │   └── plugin.json            # Plugin manifest
-├── agents/                    # 11 specialized subagents
+├── agents/                    # 12 specialized subagents
 ├── commands/                  # 12 slash commands
 ├── skills/                    # 3 skills (ultrawork, git-master, frontend-ui-ux)
 ├── hooks/
@@ -106,7 +128,8 @@ The installer adds to your Claude Code config (`~/.claude/`):
 │   ├── momus.md               # Plan reviewer (Opus)
 │   ├── metis.md               # Pre-planning consultant (Opus)
 │   ├── sisyphus-junior.md     # Focused executor (Sonnet)
-│   └── prometheus.md          # Strategic planner (Opus)
+│   ├── prometheus.md          # Strategic planner (Opus)
+│   └── qa-tester.md           # CLI/service testing (Sonnet)
 ├── commands/
 │   ├── sisyphus.md         # /sisyphus command
 │   ├── sisyphus-default.md # /sisyphus-default command
@@ -321,7 +344,7 @@ Claude uses judgment to detect task type and activate appropriate skill combinat
 
 ---
 
-## The Eleven Agents
+## The Twelve Agents
 
 Claude will automatically delegate to these specialized agents:
 
@@ -335,6 +358,7 @@ Claude will automatically delegate to these specialized agents:
 | 🎨 | **Frontend Engineer** | Sonnet | UI components, styling, accessibility |
 | 📝 | **Document Writer** | Haiku | README files, API docs, code comments |
 | 👁️ | **Multimodal Looker** | Sonnet | Analyzing screenshots, diagrams, mockups |
+| 🧪 | **QA Tester** | Sonnet | Interactive CLI/service testing with tmux |
 
 ### Planning & Review
 
@@ -348,6 +372,7 @@ Claude will automatically delegate to these specialized agents:
 
 | | Agent | Model | Best For |
 |---|-------|-------|----------|
+| 🪨 | **Orchestrator-Sisyphus** | Opus | Master todo coordination, complex multi-step task management |
 | ✨ | **Sisyphus Junior** | Sonnet | Focused task execution, plan following, direct implementation |
 
 ### Manual Agent Invocation
@@ -410,7 +435,7 @@ curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claude-sisyphus/m
 Or manually:
 
 ```bash
-rm ~/.claude/agents/{oracle,librarian,explore,frontend-engineer,document-writer,multimodal-looker,momus,metis,sisyphus-junior,prometheus}.md
+rm ~/.claude/agents/{oracle,librarian,explore,frontend-engineer,document-writer,multimodal-looker,momus,metis,sisyphus-junior,prometheus,qa-tester}.md
 rm ~/.claude/commands/{sisyphus,sisyphus-default,ultrawork,deepsearch,analyze,plan,review,prometheus,orchestrator,ralph-loop,cancel-ralph}.md
 ```
 
@@ -472,11 +497,11 @@ for await (const message of query({
 <details>
 <summary><h2>Differences from oh-my-opencode</h2></summary>
 
-This is a port of [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) adapted for Claude Code and the Claude Agent SDK. Here's what's different:
+This project is inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode), reimagined for Claude Code with skill composition, intelligent model routing, and native integration. Here's what's different:
 
 ### Model Mapping
 
-The original oh-my-opencode used multiple AI providers. This port uses Claude models exclusively:
+The original oh-my-opencode used multiple AI providers. This project uses Claude models exclusively:
 
 | Agent | Original Model | Ported Model | Notes |
 |-------|---------------|--------------|-------|
@@ -547,7 +572,7 @@ The original oh-my-opencode used multiple AI providers. This port uses Claude mo
 
 | Feature | Description |
 |---------|-------------|
-| **11 Specialized Agents** | Oracle, Librarian, Explore, Frontend Engineer, Document Writer, Multimodal Looker, Momus, Metis, Orchestrator-Sisyphus, Sisyphus-Junior, Prometheus |
+| **12 Specialized Agents** | Oracle, Librarian, Explore, Frontend Engineer, Document Writer, Multimodal Looker, QA Tester, Momus, Metis, Orchestrator-Sisyphus, Sisyphus-Junior, Prometheus |
 | **18 Lifecycle Hooks** | rules-injector, sisyphus-orchestrator, auto-slash-command, keyword-detector, ralph-loop, todo-continuation, context-window-limit-recovery, preemptive-compaction, session-recovery, directory-readme-injector, comment-checker, thinking-block-validator, empty-message-sanitizer, edit-error-recovery, non-interactive-env, agent-usage-reminder, background-notification, think-mode |
 | **6 Builtin Skills** | sisyphus, orchestrator, ultrawork, ralph-loop, frontend-ui-ux, git-master |
 | **Magic Keywords** | `ultrawork`, `search`, `analyze`, `ultrathink` trigger enhanced modes |

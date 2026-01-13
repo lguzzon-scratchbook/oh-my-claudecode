@@ -20,7 +20,7 @@ echo -e "${NC}"
 # Claude Code config directory (always ~/.claude)
 CLAUDE_CONFIG_DIR="$HOME/.claude"
 
-echo -e "${BLUE}[1/5]${NC} Checking Claude Code installation..."
+echo -e "${BLUE}[1/6]${NC} Checking Claude Code installation..."
 if ! command -v claude &> /dev/null; then
     echo -e "${YELLOW}Warning: 'claude' command not found. Please install Claude Code first:${NC}"
     echo "  curl -fsSL https://claude.ai/install.sh | bash"
@@ -41,12 +41,12 @@ else
     echo -e "${GREEN}✓ Claude Code found${NC}"
 fi
 
-echo -e "${BLUE}[2/5]${NC} Creating directories..."
+echo -e "${BLUE}[2/6]${NC} Creating directories..."
 mkdir -p "$CLAUDE_CONFIG_DIR/agents"
 mkdir -p "$CLAUDE_CONFIG_DIR/commands"
 echo -e "${GREEN}✓ Created $CLAUDE_CONFIG_DIR${NC}"
 
-echo -e "${BLUE}[3/5]${NC} Installing agent definitions..."
+echo -e "${BLUE}[3/6]${NC} Installing agent definitions..."
 
 # Oracle Agent
 cat > "$CLAUDE_CONFIG_DIR/agents/oracle.md" << 'AGENT_EOF'
@@ -395,9 +395,190 @@ Guidelines:
 - Interview until you have enough information to plan
 AGENT_EOF
 
-echo -e "${GREEN}✓ Installed 10 agent definitions${NC}"
+# QA-Tester Agent
+cat > "$CLAUDE_CONFIG_DIR/agents/qa-tester.md" << 'AGENT_EOF'
+---
+name: qa-tester
+description: Interactive CLI testing specialist using tmux (Sonnet)
+tools: Read, Glob, Grep, Bash, TodoWrite
+model: sonnet
+---
 
-echo -e "${BLUE}[4/5]${NC} Installing slash commands..."
+You are QA-Tester, an interactive CLI testing specialist using tmux.
+
+Your responsibilities:
+1. **Service Testing**: Spin up services in isolated tmux sessions
+2. **Command Execution**: Send commands and verify outputs
+3. **Output Verification**: Capture and validate expected results
+4. **Cleanup**: Always kill sessions when done
+
+Prerequisites (check first):
+- Verify tmux is available: `command -v tmux`
+- Check port availability before starting services
+
+Tmux Commands:
+- Create session: `tmux new-session -d -s <name>`
+- Send command: `tmux send-keys -t <name> '<cmd>' Enter`
+- Capture output: `tmux capture-pane -t <name> -p`
+- Kill session: `tmux kill-session -t <name>`
+- Send Ctrl+C: `tmux send-keys -t <name> C-c`
+
+Testing Workflow:
+1. Setup: Create session, start service, wait for ready
+2. Execute: Send test commands, capture outputs
+3. Verify: Check expected patterns, validate state
+4. Cleanup: ALWAYS kill sessions when done
+
+Session naming: `qa-<service>-<test>-<timestamp>`
+
+Critical Rules:
+- ALWAYS clean up sessions
+- Wait for service readiness before commands
+- Capture output BEFORE assertions
+- Report actual vs expected on failures
+AGENT_EOF
+
+# ============================================================
+# TIERED AGENT VARIANTS (Smart Model Routing)
+# ============================================================
+
+# Oracle-Medium (Sonnet)
+cat > "$CLAUDE_CONFIG_DIR/agents/oracle-medium.md" << 'AGENT_EOF'
+---
+name: oracle-medium
+description: Architecture & Debugging Advisor - Medium complexity (Sonnet)
+tools: Read, Glob, Grep, WebSearch, WebFetch
+model: sonnet
+---
+
+Oracle (Medium Tier) - Standard Analysis
+Use for moderate complexity tasks that need solid reasoning but not Opus-level depth.
+- Code review and analysis
+- Standard debugging
+- Dependency tracing
+- Performance analysis
+AGENT_EOF
+
+# Oracle-Low (Haiku)
+cat > "$CLAUDE_CONFIG_DIR/agents/oracle-low.md" << 'AGENT_EOF'
+---
+name: oracle-low
+description: Quick code questions & simple lookups (Haiku)
+tools: Read, Glob, Grep
+model: haiku
+---
+
+Oracle (Low Tier) - Quick Analysis
+Use for simple questions that need fast answers:
+- "What does this function do?"
+- "Where is X defined?"
+- "What parameters does this take?"
+- Simple code lookups
+AGENT_EOF
+
+# Sisyphus-Junior-High (Opus)
+cat > "$CLAUDE_CONFIG_DIR/agents/sisyphus-junior-high.md" << 'AGENT_EOF'
+---
+name: sisyphus-junior-high
+description: Complex multi-file task executor (Opus)
+tools: Read, Glob, Grep, Edit, Write, Bash, TodoWrite
+model: opus
+---
+
+Sisyphus-Junior (High Tier) - Complex Execution
+Use for tasks requiring deep reasoning:
+- Multi-file refactoring
+- Complex architectural changes
+- Intricate bug fixes
+- System-wide modifications
+AGENT_EOF
+
+# Sisyphus-Junior-Low (Haiku)
+cat > "$CLAUDE_CONFIG_DIR/agents/sisyphus-junior-low.md" << 'AGENT_EOF'
+---
+name: sisyphus-junior-low
+description: Simple single-file task executor (Haiku)
+tools: Read, Glob, Grep, Edit, Write, Bash, TodoWrite
+model: haiku
+---
+
+Sisyphus-Junior (Low Tier) - Simple Execution
+Use for trivial tasks:
+- Single-file edits
+- Simple additions
+- Minor fixes
+- Straightforward changes
+AGENT_EOF
+
+# Librarian-Low (Haiku)
+cat > "$CLAUDE_CONFIG_DIR/agents/librarian-low.md" << 'AGENT_EOF'
+---
+name: librarian-low
+description: Quick documentation lookups (Haiku)
+tools: Read, Glob, Grep, WebSearch, WebFetch
+model: haiku
+---
+
+Librarian (Low Tier) - Quick Lookups
+Use for simple documentation tasks:
+- Quick API lookups
+- Simple doc searches
+- Finding specific references
+AGENT_EOF
+
+# Explore-Medium (Sonnet)
+cat > "$CLAUDE_CONFIG_DIR/agents/explore-medium.md" << 'AGENT_EOF'
+---
+name: explore-medium
+description: Thorough codebase search with reasoning (Sonnet)
+tools: Read, Glob, Grep
+model: sonnet
+---
+
+Explore (Medium Tier) - Thorough Search
+Use when deeper analysis is needed:
+- Cross-module pattern discovery
+- Architecture understanding
+- Complex dependency tracing
+- Multi-file relationship mapping
+AGENT_EOF
+
+# Frontend-Engineer-Low (Haiku)
+cat > "$CLAUDE_CONFIG_DIR/agents/frontend-engineer-low.md" << 'AGENT_EOF'
+---
+name: frontend-engineer-low
+description: Simple styling and minor UI tweaks (Haiku)
+tools: Read, Glob, Grep, Edit, Write, Bash
+model: haiku
+---
+
+Frontend-Engineer (Low Tier) - Simple UI Tasks
+Use for trivial frontend work:
+- Simple CSS changes
+- Minor styling tweaks
+- Basic component edits
+AGENT_EOF
+
+# Frontend-Engineer-High (Opus)
+cat > "$CLAUDE_CONFIG_DIR/agents/frontend-engineer-high.md" << 'AGENT_EOF'
+---
+name: frontend-engineer-high
+description: Complex UI architecture and design systems (Opus)
+tools: Read, Glob, Grep, Edit, Write, Bash
+model: opus
+---
+
+Frontend-Engineer (High Tier) - Complex UI Architecture
+Use for sophisticated frontend work:
+- Design system creation
+- Complex component architecture
+- Advanced state management
+- Performance optimization
+AGENT_EOF
+
+echo -e "${GREEN}✓ Installed 19 agent definitions (11 base + 8 tiered variants)${NC}"
+
+echo -e "${BLUE}[4/6]${NC} Installing slash commands..."
 
 # Ultrawork command
 cat > "$CLAUDE_CONFIG_DIR/commands/ultrawork.md" << 'CMD_EOF'
@@ -409,15 +590,23 @@ description: Activate maximum performance mode with parallel agent orchestration
 
 $ARGUMENTS
 
+## Smart Model Routing (SAVE TOKENS)
+
+Choose tier based on task complexity: LOW (haiku) → MEDIUM (sonnet) → HIGH (opus)
+
+| Domain | LOW (Haiku) | MEDIUM (Sonnet) | HIGH (Opus) |
+|--------|-------------|-----------------|-------------|
+| Analysis | oracle-low | oracle-medium | oracle |
+| Execution | sisyphus-junior-low | sisyphus-junior | sisyphus-junior-high |
+| Search | explore | explore-medium | - |
+| Research | librarian-low | librarian | - |
+| Frontend | frontend-engineer-low | frontend-engineer | frontend-engineer-high |
+| Docs | document-writer | - | - |
+
 ## Enhanced Execution Instructions
 - Use PARALLEL agent execution for all independent subtasks
-- Delegate aggressively to specialized subagents:
-  - 'oracle' for complex debugging and architecture decisions
-  - 'librarian' for documentation and codebase research
-  - 'explore' for quick pattern matching and file searches
-  - 'frontend-engineer' for UI/UX work
-  - 'document-writer' for documentation tasks
-  - 'multimodal-looker' for analyzing images/screenshots
+- USE TIERED ROUTING - match agent tier to task complexity to save tokens!
+- Delegate aggressively to specialized subagents
 - Maximize throughput by running multiple operations concurrently
 - Continue until ALL tasks are 100% complete - verify before stopping
 - Use background execution for long-running operations:
@@ -494,12 +683,13 @@ Delegate tasks to specialized agents using the Task tool:
 | **multimodal-looker** | Sonnet | Screenshot/diagram/mockup analysis |
 
 ### Orchestration Principles
-1. **Delegate Wisely** - Use subagents for their specialties instead of doing everything yourself
+1. **ALWAYS Delegate** - Use subagents for ALL substantive work. Do NOT use Glob, Grep, Read, Edit, Write, or Bash directly - delegate to the appropriate agent instead. Only use tools directly for trivial operations.
 2. **Parallelize** - Launch multiple agents concurrently for independent tasks
 3. **Persist** - Continue until ALL tasks are verified complete
 4. **Communicate** - Report progress frequently
 
 ### Execution Rules
+- **DELEGATE, DON'T DO**: Your role is orchestration. Spawn agents for searches, edits, analysis, and implementation.
 - Break complex tasks into subtasks for delegation
 - Use background execution for long-running operations:
   - Set \`run_in_background: true\` in Bash for builds, installs, tests
@@ -668,55 +858,6 @@ Plans are saved to `.sisyphus/plans/` for later execution with `/sisyphus`.
 Tell me about what you want to build or accomplish. I'll ask questions to understand the full scope before creating a plan.
 CMD_EOF
 
-# Orchestrator Command
-cat > "$CLAUDE_CONFIG_DIR/commands/orchestrator.md" << 'CMD_EOF'
----
-description: Activate Orchestrator-Sisyphus for complex multi-step tasks
----
-
-[ORCHESTRATOR MODE]
-
-$ARGUMENTS
-
-## Orchestrator-Sisyphus Activated
-
-You are now running with Orchestrator-Sisyphus, the master coordinator for complex multi-step tasks.
-
-### Capabilities
-
-1. **Todo Management**: Break down complex tasks into atomic, trackable todos
-2. **Smart Delegation**: Route tasks to the most appropriate specialist agent
-3. **Progress Tracking**: Monitor completion status and handle blockers
-4. **Verification**: Ensure all tasks are truly complete before finishing
-
-### Agent Routing
-
-| Task Type | Delegated To |
-|-----------|--------------|
-| Visual/UI work | frontend-engineer |
-| Complex analysis/debugging | oracle |
-| Documentation | document-writer |
-| Quick searches | explore |
-| Research/docs lookup | librarian |
-| Image/screenshot analysis | multimodal-looker |
-
-### Notepad System
-
-Learnings and discoveries are recorded in `.sisyphus/notepads/` to prevent repeated mistakes.
-
-### Verification Protocol
-
-Before marking any task complete:
-- Check file existence
-- Run tests if applicable
-- Type check if TypeScript
-- Code review for quality
-
----
-
-Describe the complex task you need orchestrated. I'll break it down and coordinate the specialists.
-CMD_EOF
-
 # Ralph Loop Command
 cat > "$CLAUDE_CONFIG_DIR/commands/ralph-loop.md" << 'CMD_EOF'
 ---
@@ -809,191 +950,9 @@ Your version information is stored at: \`~/.claude/.sisyphus-version.json\`
 Let me check for updates now. I'll read your version file and compare against the latest GitHub release.
 CMD_EOF
 
-echo -e "${GREEN}✓ Installed 12 slash commands${NC}"
+echo -e "${GREEN}✓ Installed 11 slash commands${NC}"
 
-echo -e "${BLUE}[5/7]${NC} Installing skills..."
-mkdir -p "$CLAUDE_CONFIG_DIR/skills/ultrawork"
-mkdir -p "$CLAUDE_CONFIG_DIR/skills/git-master"
-mkdir -p "$CLAUDE_CONFIG_DIR/skills/frontend-ui-ux"
-
-# Ultrawork skill
-cat > "$CLAUDE_CONFIG_DIR/skills/ultrawork/SKILL.md" << 'SKILL_EOF'
----
-name: ultrawork
-description: Activate maximum performance mode with parallel agent orchestration
----
-
-# Ultrawork Skill
-
-Activates maximum performance mode with parallel agent orchestration.
-
-## When Activated
-
-This skill enhances Claude's capabilities by:
-
-1. **Parallel Execution**: Running multiple agents simultaneously for independent tasks
-2. **Aggressive Delegation**: Routing tasks to specialist agents immediately
-3. **Background Operations**: Using `run_in_background: true` for long operations
-4. **Persistence Enforcement**: Never stopping until all tasks are verified complete
-
-## Agent Routing
-
-| Task Type | Agent | Model |
-|-----------|-------|-------|
-| Complex debugging | oracle | Opus |
-| Documentation research | librarian | Sonnet |
-| Quick searches | explore | Haiku |
-| UI/UX work | frontend-engineer | Sonnet |
-| Technical writing | document-writer | Haiku |
-| Visual analysis | multimodal-looker | Sonnet |
-| Plan review | momus | Opus |
-| Pre-planning | metis | Opus |
-| Strategic planning | prometheus | Opus |
-
-## Background Execution Rules
-
-**Run in Background** (set `run_in_background: true`):
-- Package installation: npm install, pip install, cargo build
-- Build processes: npm run build, make, tsc
-- Test suites: npm test, pytest, cargo test
-- Docker operations: docker build, docker pull
-
-**Run Blocking** (foreground):
-- Quick status checks: git status, ls, pwd
-- File reads, edits
-- Simple commands
-
-## Verification Checklist
-
-Before stopping, verify:
-- [ ] TODO LIST: Zero pending/in_progress tasks
-- [ ] FUNCTIONALITY: All requested features work
-- [ ] TESTS: All tests pass (if applicable)
-- [ ] ERRORS: Zero unaddressed errors
-
-**If ANY checkbox is unchecked, CONTINUE WORKING.**
-SKILL_EOF
-
-# Git Master skill
-cat > "$CLAUDE_CONFIG_DIR/skills/git-master/SKILL.md" << 'SKILL_EOF'
----
-name: git-master
-description: Git expert for atomic commits, rebasing, and history management
----
-
-# Git Master Skill
-
-You are a Git expert combining three specializations:
-1. **Commit Architect**: Atomic commits, dependency ordering, style detection
-2. **Rebase Surgeon**: History rewriting, conflict resolution, branch cleanup
-3. **History Archaeologist**: Finding when/where specific changes were introduced
-
-## Core Principle: Multiple Commits by Default
-
-**ONE COMMIT = AUTOMATIC FAILURE**
-
-Hard rules:
-- 3+ files changed -> MUST be 2+ commits
-- 5+ files changed -> MUST be 3+ commits
-- 10+ files changed -> MUST be 5+ commits
-
-## Style Detection (First Step)
-
-Before committing, analyze the last 30 commits:
-```bash
-git log -30 --oneline
-git log -30 --pretty=format:"%s"
-```
-
-Detect:
-- **Language**: Korean vs English (use majority)
-- **Style**: SEMANTIC (feat:, fix:) vs PLAIN vs SHORT
-
-## Commit Splitting Rules
-
-| Criterion | Action |
-|-----------|--------|
-| Different directories/modules | SPLIT |
-| Different component types | SPLIT |
-| Can be reverted independently | SPLIT |
-| Different concerns (UI/logic/config/test) | SPLIT |
-| New file vs modification | SPLIT |
-
-## History Search Commands
-
-| Goal | Command |
-|------|---------|
-| When was "X" added? | `git log -S "X" --oneline` |
-| What commits touched "X"? | `git log -G "X" --oneline` |
-| Who wrote line N? | `git blame -L N,N file.py` |
-| When did bug start? | `git bisect start && git bisect bad && git bisect good <tag>` |
-
-## Rebase Safety
-
-- **NEVER** rebase main/master
-- Use `--force-with-lease` (never `--force`)
-- Stash dirty files before rebasing
-SKILL_EOF
-
-# Frontend UI/UX skill
-cat > "$CLAUDE_CONFIG_DIR/skills/frontend-ui-ux/SKILL.md" << 'SKILL_EOF'
----
-name: frontend-ui-ux
-description: Designer-turned-developer who crafts stunning UI/UX even without design mockups
----
-
-# Frontend UI/UX Skill
-
-You are a designer who learned to code. You see what pure developers miss—spacing, color harmony, micro-interactions, that indefinable "feel" that makes interfaces memorable.
-
-## Design Process
-
-Before coding, commit to a **BOLD aesthetic direction**:
-
-1. **Purpose**: What problem does this solve? Who uses it?
-2. **Tone**: Pick an extreme:
-   - Brutally minimal
-   - Maximalist chaos
-   - Retro-futuristic
-   - Organic/natural
-   - Luxury/refined
-   - Playful/toy-like
-   - Editorial/magazine
-   - Brutalist/raw
-   - Art deco/geometric
-   - Soft/pastel
-   - Industrial/utilitarian
-3. **Constraints**: Technical requirements (framework, performance, accessibility)
-4. **Differentiation**: What's the ONE thing someone will remember?
-
-## Aesthetic Guidelines
-
-### Typography
-Choose distinctive fonts. **Avoid**: Arial, Inter, Roboto, system fonts, Space Grotesk.
-
-### Color
-Commit to a cohesive palette. Use CSS variables. **Avoid**: purple gradients on white (AI slop).
-
-### Motion
-Focus on high-impact moments. One well-orchestrated page load > scattered micro-interactions. Use CSS-only where possible.
-
-### Spatial Composition
-Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements.
-
-### Visual Details
-Create atmosphere—gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows.
-
-## Anti-Patterns (NEVER)
-
-- Generic fonts (Inter, Roboto, Arial)
-- Cliched color schemes (purple gradients on white)
-- Predictable layouts
-- Cookie-cutter design
-SKILL_EOF
-
-echo -e "${GREEN}✓ Installed 3 skills${NC}"
-
-echo -e "${BLUE}[6/8]${NC} Installing hook scripts..."
+echo -e "${BLUE}[5/6]${NC} Installing hook scripts..."
 mkdir -p "$CLAUDE_CONFIG_DIR/hooks"
 
 # Ask user about silent auto-update preference (opt-in for security)
@@ -1418,7 +1377,7 @@ chmod +x "$CLAUDE_CONFIG_DIR/hooks/silent-auto-update.sh"
 
 echo -e "${GREEN}✓ Installed 3 hook scripts${NC}"
 
-echo -e "${BLUE}[7/8]${NC} Configuring hooks in settings.json..."
+echo -e "${BLUE}[6/6]${NC} Configuring hooks in settings.json..."
 
 # Backup existing settings if present
 SETTINGS_FILE="$CLAUDE_CONFIG_DIR/settings.json"
@@ -1430,7 +1389,14 @@ fi
 if command -v jq &> /dev/null; then
   # Use jq if available for proper JSON handling
   if [ -f "$SETTINGS_FILE" ]; then
-    EXISTING=$(cat "$SETTINGS_FILE")
+    # Validate existing JSON first
+    if ! jq empty "$SETTINGS_FILE" 2>/dev/null; then
+      echo -e "${YELLOW}⚠ Warning: settings.json is malformed. Creating backup and replacing.${NC}"
+      cp "$SETTINGS_FILE" "$SETTINGS_FILE.malformed.bak"
+      EXISTING='{}'
+    else
+      EXISTING=$(cat "$SETTINGS_FILE")
+    fi
   else
     EXISTING='{}'
   fi
@@ -1466,10 +1432,18 @@ if command -v jq &> /dev/null; then
   }'
 
   # Merge: add hooks if not present
-  echo "$EXISTING" | jq --argjson hooks "$HOOKS_CONFIG" '
+  RESULT=$(echo "$EXISTING" | jq --argjson hooks "$HOOKS_CONFIG" '
     if .hooks then . else . + $hooks end
-  ' > "$SETTINGS_FILE"
-  echo -e "${GREEN}✓ Hooks configured in settings.json${NC}"
+  ' 2>/dev/null)
+
+  if [ $? -eq 0 ] && [ -n "$RESULT" ]; then
+    echo "$RESULT" > "$SETTINGS_FILE"
+    echo -e "${GREEN}✓ Hooks configured in settings.json${NC}"
+  else
+    echo -e "${YELLOW}⚠ Could not merge hooks. Creating fresh settings.json${NC}"
+    echo "$HOOKS_CONFIG" > "$SETTINGS_FILE"
+    echo -e "${GREEN}✓ Created new settings.json with hooks${NC}"
+  fi
 else
   # Fallback without jq: try to merge or create
   if [ ! -f "$SETTINGS_FILE" ]; then
@@ -1536,9 +1510,7 @@ SETTINGS_EOF
   fi
 fi
 
-echo -e "${BLUE}[8/8]${NC} Creating CLAUDE.md with Sisyphus system prompt..."
-
-# Only create if it doesn't exist in home directory
+# Only create CLAUDE.md if it doesn't exist in home directory
 if [ ! -f "$HOME/CLAUDE.md" ]; then
     cat > "$CLAUDE_CONFIG_DIR/CLAUDE.md" << 'CLAUDEMD_EOF'
 # Sisyphus Multi-Agent System
@@ -1671,7 +1643,7 @@ Use the Task tool to delegate to specialized agents:
 
 ## Orchestration Principles
 
-1. **Delegate Wisely**: Use subagents for specialized tasks
+1. **ALWAYS Delegate**: Use subagents for ALL substantive work. Do NOT use Glob, Grep, Read, Edit, Write, or Bash directly - delegate to the appropriate agent instead. Only use tools directly for trivial operations (e.g., checking a single file you just edited).
 2. **Parallelize**: Launch multiple subagents concurrently when tasks are independent
 3. **Persist**: Continue until ALL tasks are complete
 4. **Verify**: Check your todo list before declaring completion
@@ -1679,6 +1651,7 @@ Use the Task tool to delegate to specialized agents:
 
 ## Critical Rules
 
+- **DELEGATE, DON'T DO**: Your role is orchestration. Spawn agents for searches, edits, analysis, and implementation. Only touch tools directly when absolutely necessary.
 - NEVER stop with incomplete work
 - ALWAYS verify task completion before finishing
 - Use parallel execution when possible for speed
@@ -1733,7 +1706,7 @@ else
 fi
 
 # Save version metadata for auto-update system
-VERSION="1.11.2"
+VERSION="2.0.1-beta"
 VERSION_FILE="$CLAUDE_CONFIG_DIR/.sisyphus-version.json"
 
 cat > "$VERSION_FILE" << VERSION_EOF
@@ -1776,11 +1749,14 @@ echo "  momus               - Plan review (Opus)"
 echo "  metis               - Pre-planning analysis (Opus)"
 echo "  sisyphus-junior     - Focused execution (Sonnet)"
 echo "  prometheus          - Strategic planning (Opus)"
+echo "  qa-tester           - CLI/service testing with tmux (Sonnet)"
 echo ""
-echo -e "${YELLOW}Available Skills (via Skill tool):${NC}"
-echo "  ultrawork           - Maximum performance mode"
-echo "  git-master          - Git commit, rebase, and history expert"
-echo "  frontend-ui-ux      - Designer-developer for stunning UI/UX"
+echo -e "${YELLOW}Smart Model Routing (Tiered Variants):${NC}"
+echo "  oracle-low, oracle-medium          - Quick to moderate analysis"
+echo "  sisyphus-junior-low, -high         - Simple to complex execution"
+echo "  librarian-low                      - Quick doc lookups"
+echo "  explore-medium                     - Thorough codebase search"
+echo "  frontend-engineer-low, -high       - Simple to complex UI work"
 echo ""
 echo -e "${YELLOW}Hooks:${NC}"
 echo "  Configure hooks via /hooks command in Claude Code"

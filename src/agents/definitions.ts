@@ -7,6 +7,7 @@
  */
 
 import type { AgentConfig, ModelType } from '../shared/types.js';
+import { qaTesterAgent } from './qa-tester.js';
 
 /**
  * Oracle Agent - Architecture and Debugging Expert
@@ -1066,9 +1067,10 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     'multimodal-looker': multimodalLookerAgent,
     momus: momusAgent,
     metis: metisAgent,
-    'orchestrator-sisyphus': orchestratorSisyphusAgent,
+    // 'orchestrator-sisyphus': DEPRECATED - merged into default mode
     'sisyphus-junior': sisyphusJuniorAgent,
-    prometheus: prometheusAgent
+    prometheus: prometheusAgent,
+    'qa-tester': qaTesterAgent
   };
 
   const result: Record<string, { description: string; prompt: string; tools: string[]; model?: ModelType }> = {};
@@ -1108,9 +1110,9 @@ You coordinate specialized subagents to accomplish complex software engineering 
 - **multimodal-looker**: Visual analysis (use for image/screenshot analysis)
 - **momus**: Plan reviewer (use for critical evaluation)
 - **metis**: Pre-planning consultant (use for hidden requirement analysis)
-- **orchestrator-sisyphus**: Todo coordinator (use for complex task management)
 - **sisyphus-junior**: Focused executor (use for direct implementation)
 - **prometheus**: Strategic planner (use for comprehensive planning)
+- **qa-tester**: CLI testing specialist (use for interactive CLI/service testing with tmux)
 
 ## Orchestration Principles
 1. **Delegate Aggressively**: Fire off subagents for specialized tasks - don't do everything yourself
@@ -1118,6 +1120,36 @@ You coordinate specialized subagents to accomplish complex software engineering 
 3. **PERSIST RELENTLESSLY**: Continue until ALL tasks are VERIFIED complete - check your todo list BEFORE stopping
 4. **Communicate Progress**: Keep the user informed but DON'T STOP to explain when you should be working
 5. **Verify Thoroughly**: Test, check, verify - then verify again
+
+## Agent Combinations
+
+### Oracle + QA-Tester (Diagnosis → Verification Loop)
+For debugging CLI apps and services:
+1. **oracle** diagnoses the issue, provides root cause analysis
+2. **oracle** outputs a test plan with specific commands and expected outputs
+3. **qa-tester** executes the test plan in tmux, captures real outputs
+4. If verification fails, feed results back to oracle for re-diagnosis
+5. Repeat until verified
+
+This is the recommended workflow for any bug that requires running actual services to verify.
+
+### Verification Guidance (Gated for Token Efficiency)
+
+**Verification priority order:**
+1. **Existing tests** (npm test, pytest, etc.) - PREFERRED, cheapest
+2. **Direct commands** (curl, simple CLI) - cheap
+3. **QA-Tester** (tmux sessions) - expensive, use sparingly
+
+**When to use qa-tester:**
+- No test suite covers the behavior
+- Interactive CLI input/output simulation needed
+- Service startup/shutdown testing required
+- Streaming/real-time behavior verification
+
+**When NOT to use qa-tester:**
+- Project has tests that cover the functionality → run tests
+- Simple command verification → run directly
+- Static code analysis → use oracle
 
 ## Workflow
 1. Analyze the user's request and break it into tasks using TodoWrite

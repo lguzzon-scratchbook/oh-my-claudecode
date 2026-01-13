@@ -13,21 +13,6 @@ import { existsSync, readFileSync } from 'fs';
 import { join, extname } from 'path';
 import { execSync } from 'child_process';
 
-/**
- * Check if running on Windows
- */
-function isWindows(): boolean {
-  return process.platform === 'win32';
-}
-
-/**
- * Cross-platform command to check if a binary exists in PATH
- * Uses 'where' on Windows, 'which' on Unix
- */
-function whichCommand(binary: string): string {
-  return isWindows() ? `where ${binary}` : `which ${binary}`;
-}
-
 // =============================================================================
 // AUTO-FORMAT PATTERN
 // =============================================================================
@@ -68,7 +53,8 @@ export function getFormatter(ext: string): string | null {
 export function isFormatterAvailable(command: string): boolean {
   try {
     const binary = command.split(' ')[0];
-    execSync(whichCommand(binary), { encoding: 'utf-8', stdio: 'pipe' });
+    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${checkCommand} ${binary}`, { encoding: 'utf-8', stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -93,8 +79,8 @@ export function formatFile(filePath: string): { success: boolean; message: strin
   try {
     execSync(`${formatter} "${filePath}"`, { encoding: 'utf-8', stdio: 'pipe' });
     return { success: true, message: `Formatted ${filePath}` };
-  } catch (error) {
-    return { success: false, message: `Format failed: ${error}` };
+  } catch (_error) {
+    return { success: false, message: `Format failed: ${_error}` };
   }
 }
 
@@ -141,7 +127,8 @@ export function lintFile(filePath: string): { success: boolean; message: string 
 
   try {
     const binary = linter.split(' ')[0];
-    execSync(whichCommand(binary), { encoding: 'utf-8', stdio: 'pipe' });
+    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${checkCommand} ${binary}`, { encoding: 'utf-8', stdio: 'pipe' });
   } catch {
     return { success: true, message: `Linter ${linter} not available` };
   }
@@ -149,7 +136,7 @@ export function lintFile(filePath: string): { success: boolean; message: string 
   try {
     execSync(`${linter} "${filePath}"`, { encoding: 'utf-8', stdio: 'pipe' });
     return { success: true, message: `Lint passed for ${filePath}` };
-  } catch (error) {
+  } catch (_error) {
     return { success: false, message: `Lint errors in ${filePath}` };
   }
 }
@@ -249,7 +236,8 @@ export function runTypeCheck(directory: string): { success: boolean; message: st
   }
 
   try {
-    execSync(whichCommand('tsc'), { encoding: 'utf-8', stdio: 'pipe' });
+    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${checkCommand} tsc`, { encoding: 'utf-8', stdio: 'pipe' });
   } catch {
     return { success: true, message: 'TypeScript not installed' };
   }
@@ -257,7 +245,7 @@ export function runTypeCheck(directory: string): { success: boolean; message: st
   try {
     execSync('tsc --noEmit', { cwd: directory, encoding: 'utf-8', stdio: 'pipe' });
     return { success: true, message: 'Type check passed' };
-  } catch (error) {
+  } catch (_error) {
     return { success: false, message: 'Type errors found' };
   }
 }
@@ -279,7 +267,7 @@ export function runTests(directory: string): { success: boolean; message: string
         execSync('npm test', { cwd: directory, encoding: 'utf-8', stdio: 'pipe' });
         return { success: true, message: 'Tests passed' };
       }
-    } catch (error) {
+    } catch (_error) {
       return { success: false, message: 'Tests failed' };
     }
   }
@@ -289,7 +277,7 @@ export function runTests(directory: string): { success: boolean; message: string
     try {
       execSync('pytest', { cwd: directory, encoding: 'utf-8', stdio: 'pipe' });
       return { success: true, message: 'Tests passed' };
-    } catch (error) {
+    } catch (_error) {
       return { success: false, message: 'Tests failed' };
     }
   }

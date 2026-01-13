@@ -2,7 +2,7 @@
  * Oh-My-Claude-Sisyphus
  *
  * A multi-agent orchestration system for the Claude Agent SDK.
- * Port of oh-my-opencode for Claude.
+ * Inspired by oh-my-opencode, reimagined for Claude Code.
  *
  * Main features:
  * - Sisyphus: Primary orchestrator that delegates to specialized subagents
@@ -155,8 +155,7 @@ export {
   MOMUS_PROMPT_METADATA,
   metisAgent,
   METIS_PROMPT_METADATA,
-  orchestratorSisyphusAgent,
-  ORCHESTRATOR_SISYPHUS_PROMPT_METADATA,
+  // orchestrator-sisyphus: DEPRECATED - merged into default mode
   prometheusAgent,
   PROMETHEUS_PROMPT_METADATA
 } from './agents/index.js';

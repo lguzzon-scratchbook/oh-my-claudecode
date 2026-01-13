@@ -64,28 +64,46 @@ Before outputting `<promise>DONE</promise>`, verify:
 
 **If ANY checkbox is unchecked, DO NOT output the promise. Continue working.**
 
-## ORACLE VERIFICATION (MANDATORY)
+## VERIFICATION PROTOCOL (MANDATORY)
 
-**You CANNOT declare task complete without Oracle approval.**
+**You CANNOT declare task complete without proper verification.**
 
-When you believe the task is complete:
+### Step 1: Oracle Review
+```
+Task(subagent_type="oracle", prompt="VERIFY COMPLETION:
+Original task: [describe the task]
+What I implemented: [list changes]
+Tests run: [test results]
+Please verify this is truly complete and production-ready.")
+```
 
-1. **Spawn Oracle for verification**:
-   ```
-   Task(subagent_type="oracle", prompt="VERIFY COMPLETION:
-   Original task: [describe the task]
-   What I implemented: [list changes]
-   Tests run: [test results]
-   Please verify this is truly complete and production-ready.")
-   ```
+### Step 2: Runtime Verification (Choose ONE)
 
-2. **Wait for Oracle's assessment**
+**Option A: Standard Test Suite (PREFERRED)**
+If the project has tests (npm test, pytest, cargo test, etc.):
+```bash
+npm test  # or pytest, go test, etc.
+```
+Use this when existing tests cover the functionality.
 
-3. **Based on Oracle's response**:
-   - **If APPROVED**: Output `<promise>DONE</promise>`
-   - **If REJECTED**: Fix ALL issues Oracle identified, then re-verify
+**Option B: QA-Tester (ONLY when needed)**
+Use qa-tester ONLY when ALL of these apply:
+- ✗ No existing test suite covers the behavior
+- ✓ Requires interactive CLI input/output
+- ✓ Needs service startup/shutdown verification
+- ✓ Tests streaming, real-time, or tmux-specific behavior
 
-**NO PROMISE WITHOUT ORACLE APPROVAL.**
+```
+Task(subagent_type="qa-tester", prompt="VERIFY BEHAVIOR: ...")
+```
+
+**Gating Rule**: If `npm test` (or equivalent) passes, you do NOT need qa-tester.
+
+### Step 3: Based on Verification Results
+- **If Oracle APPROVED + Tests/QA-Tester PASS**: Output `<promise>DONE</promise>`
+- **If any REJECTED/FAILED**: Fix issues and re-verify
+
+**NO PROMISE WITHOUT VERIFICATION.**
 
 ---
 

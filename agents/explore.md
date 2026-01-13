@@ -1,6 +1,6 @@
 ---
 name: explore
-description: Fast codebase search specialist
+description: Fast codebase search specialist for finding files and code patterns
 model: haiku
 ---
 

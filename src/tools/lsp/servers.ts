@@ -8,21 +8,6 @@
 import { execSync } from 'child_process';
 import { extname } from 'path';
 
-/**
- * Check if running on Windows
- */
-function isWindows(): boolean {
-  return process.platform === 'win32';
-}
-
-/**
- * Cross-platform command to check if a binary exists in PATH
- * Uses 'where' on Windows, 'which' on Unix
- */
-function whichCommand(command: string): string {
-  return isWindows() ? `where ${command}` : `which ${command}`;
-}
-
 export interface LspServerConfig {
   name: string;
   command: string;
@@ -113,7 +98,8 @@ export const LSP_SERVERS: Record<string, LspServerConfig> = {
  */
 export function commandExists(command: string): boolean {
   try {
-    execSync(whichCommand(command), { stdio: 'ignore' });
+    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${checkCommand} ${command}`, { stdio: 'ignore' });
     return true;
   } catch {
     return false;
