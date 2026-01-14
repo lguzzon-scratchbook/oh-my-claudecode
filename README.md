@@ -2,11 +2,25 @@
 
 ![oh-my-claude-sisyphus](https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claude-sisyphus-website/main/social-preview.png)
 
-# 🚀 v2.1.0 - Claude Code Native Multi-Agent Orchestration
+# 🚀 v2.2.0 - Claude Code Native Multi-Agent Orchestration
 
-[![Version](https://img.shields.io/badge/version-2.1.0-ff6b6b)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-ff6b6b)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/releases)
+[![npm version](https://img.shields.io/npm/v/oh-my-claude-sisyphus?color=cb3837)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
+[![Downloads](https://img.shields.io/npm/dt/oh-my-claude-sisyphus?color=00d4aa)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
+[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claude-sisyphus?style=flat&color=ffd700)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Yeachan-Heo/oh-my-claude-sisyphus?style=flat&color=00bfff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/Yeachan-Heo/oh-my-claude-sisyphus?color=ff9800)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Yeachan-Heo/oh-my-claude-sisyphus?color=9c27b0)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/commits)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-d97706?logo=anthropic&logoColor=white)](https://docs.anthropic.com/claude-code)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/pulls)
+
 [![Agents](https://img.shields.io/badge/Agents-19-ff0040)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
+[![Skills](https://img.shields.io/badge/Skills-8-ff6600)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
+[![Hooks](https://img.shields.io/badge/Hooks-18-0088ff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 [![Days Since Ban](https://img.shields.io/badge/Days%20Since%20Ban-0-00ffff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 [![Resurrections](https://img.shields.io/badge/Resurrections-∞-ff00ff)](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus)
 
@@ -225,6 +239,7 @@ claude
 | `/orchestrator <task>` | Complex multi-step task coordination |
 | `/ralph-loop <task>` | Self-referential loop until task completion |
 | `/cancel-ralph` | Cancel active Ralph Loop |
+| `/doctor` | Diagnose and fix installation issues |
 
 ### Examples
 
@@ -326,7 +341,7 @@ Oh-my-claude-sisyphus includes 18 lifecycle hooks that enhance Claude Code's beh
 
 ## Builtin Skills
 
-Seven builtin skills provide specialized capabilities:
+Eight builtin skills provide specialized capabilities:
 
 | Skill | Description |
 |-------|-------------|
@@ -337,6 +352,7 @@ Seven builtin skills provide specialized capabilities:
 | **ralph-loop** | Self-referential development until completion |
 | **frontend-ui-ux** | Designer-turned-developer UI/UX expertise |
 | **git-master** | Git expert for atomic commits and history |
+| **doctor** | Diagnose and fix installation issues |
 
 Skills are automatically activated via slash commands or magic keywords.
 
