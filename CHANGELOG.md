@@ -11,10 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Help Command** (`commands/help.md`)
   - Comprehensive `/help` command to guide users on plugin usage
-  - Quick reference for all 21 commands and 19 agents
+  - Quick reference for all 19 commands and 19 agents
   - Example workflows for common tasks
   - Tips for effective usage and best practices
   - Integration with plugin documentation
+
+### Fixed
+
+- **Stop Hook Compatibility** (`scripts/persistent-mode.mjs`)
+  - Fixed ERR_MODULE_NOT_FOUND error when upgrading from 2.5.0 to 2.6.0
+  - Made notepad module import dynamic with graceful fallback
+  - Hook now works even if notepad module is missing (backward compatibility)
 
 ## [2.6.0] - 2026-01-19
 

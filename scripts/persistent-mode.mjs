@@ -7,9 +7,22 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
-import { pruneOldEntries } from '../dist/hooks/notepad/index.js';
+import { fileURLToPath } from 'url';
+
+// Dynamic import for notepad with fallback
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+let pruneOldEntries = null;
+
+try {
+  const notepadModule = await import(join(__dirname, '../dist/hooks/notepad/index.js'));
+  pruneOldEntries = notepadModule.pruneOldEntries;
+} catch (err) {
+  // Notepad module not available - pruning will be skipped
+  // This can happen in older versions or if build failed
+}
 
 // Read all stdin
 async function readStdin() {
@@ -178,9 +191,11 @@ async function main() {
       if (prdStatus.hasPrd && prdStatus.allComplete) {
         // Prune old notepad entries on clean session stop
         try {
-          const pruneResult = pruneOldEntries(directory, 7);
-          if (pruneResult.pruned > 0) {
-            // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+          if (pruneOldEntries) {
+            const pruneResult = pruneOldEntries(directory, 7);
+            if (pruneResult.pruned > 0) {
+              // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+            }
           }
         } catch (err) {
           // Silently ignore prune errors
@@ -314,9 +329,11 @@ ${ralphState.prompt ? `Original task: ${ralphState.prompt}` : ''}
       if (newCount > maxReinforcements) {
         // Prune old notepad entries on clean session stop
         try {
-          const pruneResult = pruneOldEntries(directory, 7);
-          if (pruneResult.pruned > 0) {
-            // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+          if (pruneOldEntries) {
+            const pruneResult = pruneOldEntries(directory, 7);
+            if (pruneResult.pruned > 0) {
+              // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+            }
           }
         } catch (err) {
           // Silently ignore prune errors
@@ -376,9 +393,11 @@ ${ultraworkState.original_prompt ? `Original task: ${ultraworkState.original_pro
       if (contState.count > maxContinuations) {
         // Prune old notepad entries on clean session stop
         try {
-          const pruneResult = pruneOldEntries(directory, 7);
-          if (pruneResult.pruned > 0) {
-            // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+          if (pruneOldEntries) {
+            const pruneResult = pruneOldEntries(directory, 7);
+            if (pruneResult.pruned > 0) {
+              // Optionally log: console.error(`Pruned ${pruneResult.pruned} old notepad entries`);
+            }
           }
         } catch (err) {
           // Silently ignore prune errors
