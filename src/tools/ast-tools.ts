@@ -22,6 +22,26 @@ async function getSgModule() {
 }
 
 /**
+ * Single source of truth for supported language keys.
+ * Used by both SUPPORTED_LANGUAGES and toLangEnum.
+ * Adding a language here WITHOUT adding it to toLangEnum
+ * causes a TypeScript compile error (Record<LanguageKey, ...> requires all keys).
+ *
+ * Note: The 24 language keys here MUST correspond to valid values in the
+ * ast-grep Lang enum. This is verified at compile time by the
+ * Record<LanguageKey, Lang> type constraint in toLangEnum -- if ast-grep
+ * removes or renames a Lang variant, the build will fail with a type error
+ * on the corresponding langMap entry.
+ */
+const LANGUAGE_KEYS = [
+  "javascript", "typescript", "tsx", "python", "ruby", "go", "rust",
+  "java", "kotlin", "swift", "c", "cpp", "csharp", "html", "css",
+  "json", "yaml", "bash", "elixir", "haskell", "lua", "php", "scala", "sql",
+] as const;
+
+type LanguageKey = typeof LANGUAGE_KEYS[number];
+
+/**
  * Convert lowercase language string to ast-grep Lang enum value
  * This provides type-safe language conversion without using 'as any'
  */
@@ -29,7 +49,7 @@ function toLangEnum(
   sg: typeof import("@ast-grep/napi"),
   language: string,
 ): import("@ast-grep/napi").Lang {
-  const langMap: Record<string, import("@ast-grep/napi").Lang> = {
+  const langMap: Record<LanguageKey, import("@ast-grep/napi").Lang> = {
     javascript: sg.Lang.JavaScript,
     typescript: sg.Lang.TypeScript,
     tsx: sg.Lang.Tsx,
@@ -47,9 +67,16 @@ function toLangEnum(
     css: sg.Lang.Css,
     json: sg.Lang.Json,
     yaml: sg.Lang.Yaml,
+    bash: sg.Lang.Bash,
+    elixir: sg.Lang.Elixir,
+    haskell: sg.Lang.Haskell,
+    lua: sg.Lang.Lua,
+    php: sg.Lang.Php,
+    scala: sg.Lang.Scala,
+    sql: sg.Lang.Sql,
   };
 
-  const lang = langMap[language];
+  const lang = langMap[language as LanguageKey];
   if (!lang) {
     throw new Error(`Unsupported language: ${language}`);
   }
@@ -69,32 +96,14 @@ export interface AstToolDefinition<T extends z.ZodRawShape> {
  * Supported languages for AST analysis
  * Maps to ast-grep language identifiers
  */
-export const SUPPORTED_LANGUAGES: [string, ...string[]] = [
-  "javascript",
-  "typescript",
-  "tsx",
-  "python",
-  "ruby",
-  "go",
-  "rust",
-  "java",
-  "kotlin",
-  "swift",
-  "c",
-  "cpp",
-  "csharp",
-  "html",
-  "css",
-  "json",
-  "yaml",
-];
+export const SUPPORTED_LANGUAGES: [string, ...string[]] = [...LANGUAGE_KEYS];
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**
  * Map file extensions to ast-grep language identifiers
  */
-const EXT_TO_LANG: Record<string, string> = {
+const EXT_TO_LANG: Record<string, LanguageKey> = {
   ".js": "javascript",
   ".mjs": "javascript",
   ".cjs": "javascript",
@@ -104,6 +113,7 @@ const EXT_TO_LANG: Record<string, string> = {
   ".cts": "typescript",
   ".tsx": "tsx",
   ".py": "python",
+  ".pyw": "python",
   ".rb": "ruby",
   ".go": "go",
   ".rs": "rust",
@@ -124,6 +134,19 @@ const EXT_TO_LANG: Record<string, string> = {
   ".json": "json",
   ".yaml": "yaml",
   ".yml": "yaml",
+  ".sh": "bash",
+  ".bash": "bash",
+  ".zsh": "bash",  // NOTE: ast-grep uses bash parser; some zsh-specific syntax may not parse correctly
+  ".ex": "elixir",
+  ".exs": "elixir",
+  ".hs": "haskell",
+  ".lhs": "haskell",
+  ".lua": "lua",
+  ".php": "php",
+  ".phtml": "php",
+  ".scala": "scala",
+  ".sc": "scala",
+  ".sql": "sql",
 };
 
 /**

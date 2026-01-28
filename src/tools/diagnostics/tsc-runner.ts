@@ -4,9 +4,10 @@
  * Executes `tsc --noEmit` to get project-level type checking diagnostics.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './constants.js';
 
 export interface TscDiagnostic {
   file: string;
@@ -22,6 +23,7 @@ export interface TscResult {
   diagnostics: TscDiagnostic[];
   errorCount: number;
   warningCount: number;
+  skipped?: string;
 }
 
 /**
@@ -37,15 +39,17 @@ export function runTscDiagnostics(directory: string): TscResult {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
+      skipped: 'no tsconfig.json found in directory'
     };
   }
 
   try {
-    execSync('tsc --noEmit --pretty false', {
+    execFileSync('tsc', ['--noEmit', '--pretty', 'false'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
       success: true,
@@ -54,7 +58,31 @@ export function runTscDiagnostics(directory: string): TscResult {
       warningCount: 0
     };
   } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return {
+        success: true,
+        diagnostics: [],
+        errorCount: 0,
+        warningCount: 0,
+        skipped: '`tsc` binary not found in PATH'
+      };
+    }
     const output = error.stdout || error.stderr || '';
+    if (!output.trim()) {
+      return {
+        success: false,
+        diagnostics: [{
+          file: '.',
+          line: 0,
+          column: 0,
+          code: 'tsc-crash',
+          message: 'tsc exited with errors but produced no diagnostic output (possible configuration issue)',
+          severity: 'error' as const
+        }],
+        errorCount: 1,
+        warningCount: 0
+      };
+    }
     return parseTscOutput(output);
   }
 }
@@ -63,7 +91,7 @@ export function runTscDiagnostics(directory: string): TscResult {
  * Parse TypeScript compiler output into structured diagnostics
  * Format: file(line,col): error TS1234: message
  */
-function parseTscOutput(output: string): TscResult {
+export function parseTscOutput(output: string): TscResult {
   const diagnostics: TscDiagnostic[] = [];
 
   // Parse tsc output format: file(line,col): error TS1234: message
